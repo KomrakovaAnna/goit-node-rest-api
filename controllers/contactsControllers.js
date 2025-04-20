@@ -1,5 +1,5 @@
-import HttpError from '../helpers/HttpError.js';
 import * as contactsService from '../services/contactsServices.js';
+import HttpError from '../helpers/HttpError.js';
 import ctrlWrapper from '../decorators/ctrlWrapper.js';
 
 export const getContactsController = ctrlWrapper(async (req, res) => {
@@ -9,6 +9,7 @@ export const getContactsController = ctrlWrapper(async (req, res) => {
 
 export const getContactByIdController = ctrlWrapper(async (req, res) => {
   const { id } = req.params;
+
   const contact = await contactsService.getContactById(id);
 
   if (!contact) {
@@ -35,6 +36,16 @@ export const updateContactController = ctrlWrapper(async (req, res) => {
 export const deleteContactController = ctrlWrapper(async (req, res) => {
   const { id } = req.params;
   const contact = await contactsService.deleteContact(id);
+
+  if (!contact) {
+    throw HttpError(404, 'Not found');
+  }
+  res.status(200).json(contact);
+});
+
+export const updateStatusContactController = ctrlWrapper(async (req, res) => {
+  const { id } = req.params;
+  const contact = await contactsService.updateStatusContact(id, req.body);
 
   if (!contact) {
     throw HttpError(404, 'Not found');
