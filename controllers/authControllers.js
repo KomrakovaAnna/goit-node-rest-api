@@ -11,9 +11,10 @@ export const registerController = ctrlWrapper(async (req, res, next) => {
 });
 
 export const loginController = ctrlWrapper(async (req, res) => {
-  const { token } = await authServices.loginUser(req.body);
+  const { token, user } = await authServices.loginUser(req.body);
   res.json({
     token,
+    user,
   });
 });
 
