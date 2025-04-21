@@ -14,12 +14,12 @@ export const updateContactById = async (id, data) => {
   });
 };
 
-export const deleteContact = id =>
-  Contact.destroy({
-    where: {
-      id,
-    },
-  });
+export const deleteContact = async id => {
+  const contact = await Contact.findByPk(id);
+  if (!contact) return null;
+  await contact.destroy();
+  return contact;
+};
 
 export const updateStatusContact = async (contactId, body) => {
   const contact = await getContactById(contactId);
