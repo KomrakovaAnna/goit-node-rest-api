@@ -29,7 +29,9 @@ export const updateStatusContact = async (query, body) => {
   });
 };
 
-export const deleteContact = query =>
-  Contact.destroy({
-    where: query,
-  });
+export const deleteContact = async id => {
+  const contact = await Contact.findByPk(id);
+  if (!contact) return null;
+  await contact.destroy();
+  return contact;
+};

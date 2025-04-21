@@ -46,6 +46,10 @@ export const loginUser = async data => {
 
   return {
     token,
+    user: {
+      email: user.email,
+      subscription: user.subscription,
+    },
   };
 };
 
