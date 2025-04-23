@@ -1,9 +1,19 @@
 import ctrlWrapper from '../decorators/ctrlWrapper.js';
 import * as authServices from '../services/authServices.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+const avatarDir = path.resolve('public', 'avatars');
 
 export const registerController = ctrlWrapper(async (req, res, next) => {
-  const newUser = await authServices.registerUser(req.body);
-
+  let avatarURL = null;
+  if (req.file) {
+    const { path: oldPath, filename } = req.file;
+    const newPath = path.join(avatarDir, filename);
+    await fs.rename(oldPath, newPath);
+    avatarURL = path.join('posters', filename);
+  }
+  const newUser = await authServices.registerUser({ ...req.body, avatarURL });
   res.status(201).json({
     email: newUser.email,
     subscription: newUser.subscription,
@@ -31,4 +41,38 @@ export const logoutController = ctrlWrapper(async (req, res) => {
   await authServices.logoutUser(id);
 
   res.sendStatus(204);
+});
+
+export const updateUserAvatarController = ctrlWrapper(async (req, res) => {
+  if (!req.user) {
+    throw HttpError(401, 'Not authorized');
+  }
+
+  if (!req.file) {
+    throw HttpError(400, 'File not found');
+  }
+
+  const { id, avatarURL: oldAvatarURL } = req.user;
+  const { path: tempPath, filename } = req.file;
+  const avatarsDir = path.resolve('public', 'avatars');
+  const finalPath = path.join(avatarsDir, filename);
+
+  if (oldAvatarURL) {
+    const oldFileName = path.basename(oldAvatarURL);
+    if (oldFileName !== filename) {
+      const oldFilePath = path.join(avatarsDir, oldFileName);
+      try {
+        await fs.unlink(oldFilePath);
+      } catch (error) {
+        console.log(`Failed to delete old avatar: ${error.message}`);
+      }
+    }
+  }
+
+  await fs.rename(tempPath, finalPath);
+
+  const newAvatarURL = `/avatars/${filename}`;
+  await authServices.updateUserAvatar(id, { avatarURL: newAvatarURL });
+
+  res.status(200).json({ avatarURL: newAvatarURL });
 });
