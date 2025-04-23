@@ -2,6 +2,7 @@ import User from '../db/models/User.js';
 import HttpError from '../helpers/HttpError.js';
 import bcrypt from 'bcrypt';
 import { generateToken } from '../helpers/jwt.js';
+import gravatar from 'gravatar';
 
 export const findUser = query =>
   User.findOne({
@@ -20,7 +21,9 @@ export const registerUser = async data => {
     throw HttpError(409, 'Email in use');
   }
   const hashedPassword = await bcrypt.hash(password, 10);
-  return User.create({ ...data, password: hashedPassword });
+  const avatarURL = gravatar.url(email, { s: '250', d: 'mp' }, true);
+
+  return User.create({ ...data, password: hashedPassword, avatarURL });
 };
 
 export const loginUser = async data => {
@@ -60,4 +63,14 @@ export const logoutUser = async id => {
   }
 
   await user.update({ token: null });
+};
+
+export const updateUserAvatar = async (id, data) => {
+  const user = await User.findByPk(id);
+  if (!user) {
+    throw HttpError(404, 'User not found');
+  }
+
+  await user.update(data);
+  return user;
 };
