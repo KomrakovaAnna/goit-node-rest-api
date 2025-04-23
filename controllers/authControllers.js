@@ -2,16 +2,18 @@ import ctrlWrapper from '../decorators/ctrlWrapper.js';
 import * as authServices from '../services/authServices.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import HttpError from '../helpers/HttpError.js';
 
 const avatarDir = path.resolve('public', 'avatars');
 
 export const registerController = ctrlWrapper(async (req, res, next) => {
   let avatarURL = null;
+
   if (req.file) {
     const { path: oldPath, filename } = req.file;
     const newPath = path.join(avatarDir, filename);
     await fs.rename(oldPath, newPath);
-    avatarURL = path.join('posters', filename);
+    avatarURL = path.join('avatars', filename);
   }
   const newUser = await authServices.registerUser({ ...req.body, avatarURL });
   res.status(201).json({
