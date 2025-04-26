@@ -3,6 +3,16 @@ import HttpError from '../helpers/HttpError.js';
 import bcrypt from 'bcrypt';
 import { generateToken } from '../helpers/jwt.js';
 import gravatar from 'gravatar';
+import { nanoid } from 'nanoid';
+import sendEmail from '../helpers/sendEmail.js';
+
+const { APP_DOMAIN } = process.env;
+
+const createVerifyEmail = (email, verificationCode) => ({
+  to: email,
+  subject: 'Verify email',
+  html: `<a href="${APP_DOMAIN}/api/auth/verify/${verificationCode}" target="_blank">Click verify email</a>`,
+});
 
 export const findUser = query =>
   User.findOne({
@@ -21,9 +31,43 @@ export const registerUser = async data => {
     throw HttpError(409, 'Email in use');
   }
   const hashedPassword = await bcrypt.hash(password, 10);
+  const verificationCode = nanoid();
   const avatarURL = gravatar.url(email, { s: '250', d: 'mp' }, true);
 
-  return User.create({ ...data, password: hashedPassword, avatarURL });
+  const newUser = await User.create({
+    ...data,
+    password: hashedPassword,
+    avatarURL,
+    verificationCode,
+  });
+  const verifyEmail = createVerifyEmail(email, verificationCode);
+
+  await sendEmail(verifyEmail);
+
+  return newUser;
+};
+
+export const verifyUser = async verificationCode => {
+  const user = await findUser({ verificationCode });
+  if (!user) {
+    throw HttpError(404, 'User not found');
+  }
+
+  await user.update({ verificationCode: null, verify: true });
+};
+
+export const resendVerifyEmail = async email => {
+  const user = await findUser({ email });
+  if (!user) {
+    throw HttpError(404, 'Email not found');
+  }
+  if (user.verify) {
+    throw HttpError(400, 'Verification has already been passed');
+  }
+
+  const verifyEmail = createVerifyEmail(email, user.verificationCode);
+
+  await sendEmail(verifyEmail);
 };
 
 export const loginUser = async data => {
@@ -35,6 +79,9 @@ export const loginUser = async data => {
   });
   if (!user) {
     throw HttpError(401, 'Email or password is wrong');
+  }
+  if (!user.verify) {
+    throw HttpError(401, 'Email not verified');
   }
   const passwordCompare = await bcrypt.compare(password, user.password);
   if (!passwordCompare) {
