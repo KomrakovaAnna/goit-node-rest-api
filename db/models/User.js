@@ -15,6 +15,15 @@ export const User = sequelize.define('user', {
       is: emailRegexp,
     },
   },
+  verify: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  verificationCode: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+
   subscription: {
     type: DataTypes.ENUM,
     values: ['starter', 'pro', 'business'],

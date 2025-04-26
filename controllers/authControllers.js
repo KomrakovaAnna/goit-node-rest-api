@@ -19,6 +19,28 @@ export const registerController = ctrlWrapper(async (req, res, next) => {
     subscription: newUser.subscription,
   });
 });
+export const verifyController = ctrlWrapper(async (req, res) => {
+  const { verificationCode } = req.params;
+  await authServices.verifyUser(verificationCode);
+
+  res.json({
+    message: 'Verification successful',
+  });
+});
+
+export const resendVerifyEmailController = ctrlWrapper(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'missing required field email' });
+  }
+
+  await authServices.resendVerifyEmail(email);
+
+  res.json({
+    message: 'Verification email sent',
+  });
+});
 
 export const loginController = ctrlWrapper(async (req, res) => {
   const { token, user } = await authServices.loginUser(req.body);
