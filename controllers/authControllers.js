@@ -20,8 +20,8 @@ export const registerController = ctrlWrapper(async (req, res, next) => {
   });
 });
 export const verifyController = ctrlWrapper(async (req, res) => {
-  const { verificationCode } = req.params;
-  await authServices.verifyUser(verificationCode);
+  const { verificationToken } = req.params;
+  await authServices.verifyUser(verificationToken);
 
   res.json({
     message: 'Verification successful',

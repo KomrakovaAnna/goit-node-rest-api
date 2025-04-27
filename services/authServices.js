@@ -8,10 +8,10 @@ import sendEmail from '../helpers/sendEmail.js';
 
 const { APP_DOMAIN } = process.env;
 
-const createVerifyEmail = (email, verificationCode) => ({
+const createVerifyEmail = (email, verificationToken) => ({
   to: email,
   subject: 'Verify email',
-  html: `<a href="${APP_DOMAIN}/api/auth/verify/${verificationCode}" target="_blank">Click verify email</a>`,
+  html: `<a href="${APP_DOMAIN}/api/auth/verify/${verificationToken}" target="_blank">Click verify email</a>`,
 });
 
 export const findUser = query =>
@@ -31,29 +31,29 @@ export const registerUser = async data => {
     throw HttpError(409, 'Email in use');
   }
   const hashedPassword = await bcrypt.hash(password, 10);
-  const verificationCode = nanoid();
+  const verificationToken = nanoid();
   const avatarURL = gravatar.url(email, { s: '250', d: 'mp' }, true);
 
   const newUser = await User.create({
     ...data,
     password: hashedPassword,
     avatarURL,
-    verificationCode,
+    verificationToken,
   });
-  const verifyEmail = createVerifyEmail(email, verificationCode);
+  const verifyEmail = createVerifyEmail(email, verificationToken);
 
   await sendEmail(verifyEmail);
 
   return newUser;
 };
 
-export const verifyUser = async verificationCode => {
-  const user = await findUser({ verificationCode });
+export const verifyUser = async verificationToken => {
+  const user = await findUser({ verificationToken });
   if (!user) {
     throw HttpError(404, 'User not found');
   }
 
-  await user.update({ verificationCode: null, verify: true });
+  await user.update({ verificationToken: null, verify: true });
 };
 
 export const resendVerifyEmail = async email => {
@@ -65,7 +65,7 @@ export const resendVerifyEmail = async email => {
     throw HttpError(400, 'Verification has already been passed');
   }
 
-  const verifyEmail = createVerifyEmail(email, user.verificationCode);
+  const verifyEmail = createVerifyEmail(email, user.verificationToken);
 
   await sendEmail(verifyEmail);
 };
